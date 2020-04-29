@@ -30,15 +30,16 @@ public class ChatHandler implements Runnable {
                 //读取用户发送的消息
                 BufferedReader bufferedReader=new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String s = bufferedReader.readLine();
-                System.out.println("客户端【"+socket.getPort()+"】:"+s);
+                System.out.println(Thread.currentThread().getName()+":客户端【"+socket.getPort()+"】:"+s);
+                //将消息转发给聊天室中的其他在线用户
+
+                chatServer.boardcastMsg(socket,s+"\n");
                 //用户退出
                 if (!StringUtils.isEmpty(s)&& ChatServer.QUIT.equals(s)) {
                     chatServer.removeClient(socket);
                     socket=null;
                     break;
                 }
-                //将消息转发给聊天室中的其他在线用户
-                chatServer.boardcastMsg(socket,s+"\n");
 
             }
 

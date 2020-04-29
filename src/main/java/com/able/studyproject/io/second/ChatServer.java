@@ -8,9 +8,10 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @param
@@ -27,7 +28,12 @@ public class ChatServer {
     private ServerSocket serverSocket;
 
     private Map<Integer, Writer> connectecdClient;
+    ExecutorService executorService= Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
+    public static void main(String[] args){
+      ChatServer chatServer=new ChatServer();
+      chatServer.start();
+    }
 
     public void start() {
         try {
@@ -39,7 +45,9 @@ public class ChatServer {
                 //等待客户端连接
                 Socket socket = serverSocket.accept();
                 //@TODO 创建ChatHandler线程 用于连接的客户端事件处理
-                new Thread(new ChatHandler(this,socket)).start();
+                System.out.println("客户端【"+socket.getPort()+"】已经连接到服务器");
+                executorService.submit(new ChatHandler(this,socket));
+                //new Thread(new ChatHandler(this,socket)).start();
             }
 
         } catch (IOException e) {
@@ -86,7 +94,7 @@ public class ChatServer {
             connectecdClient.remove(port);
             System.out.println("客户端【" + port + "】已经断开连接了");
         }
-        boardcastMsg(socket,"客户端【" + port + "】已经退出");
+        boardcastMsg(socket,"客户端【" + port + "】已经退出\n");
 
     }
 
@@ -98,7 +106,10 @@ public class ChatServer {
         connectecdClient.forEach((k, v) -> {
             if (!k.equals(port)) {
                 try {
-                    v.write("来自" + port + "的消息" + msg);
+                    String temp="来自" + port + "的消息:" + msg;
+
+                    v.write(temp);
+
                     v.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
