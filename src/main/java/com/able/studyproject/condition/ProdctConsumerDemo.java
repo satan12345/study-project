@@ -21,13 +21,13 @@ public class ProdctConsumerDemo {
     static BlockingQueue<String> blockingQueue = new ArrayBlockingQueue<>(MAX_COUNT);
     static Lock lock = new ReentrantLock();
     /**
-     * 没有满,要唤醒生产者进行生产
+     * 消费者线程的condition 为空 await  有元素的时候要唤醒 signalAll
      */
-    static Condition notFull = lock.newCondition();
+    static Condition consumerCondition = lock.newCondition();
     /**
-     * 没有空,要唤醒消费者进行消费
+     * 生产者线程的condition 满时 await 有空位是要唤醒 signalAll
      */
-    static Condition notEmpty = lock.newCondition();
+    static Condition productCondition = lock.newCondition();
 
     public static void main(String[] args) throws Exception {
         Consumer consumer = new Consumer();
@@ -66,7 +66,7 @@ public class ProdctConsumerDemo {
                          * 此时为空,消费者线程暂停
                          */
                         System.err.println(Thread.currentThread().getName()+"队列满了,线程暂停");
-                        notEmpty.await();
+                        consumerCondition.await();
                     }
                     numCount--;
                     String take = blockingQueue.take();
@@ -76,9 +76,14 @@ public class ProdctConsumerDemo {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    notFull.signalAll();
+                    productCondition.signal();
                 } finally {
                     lock.unlock();
+                }
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -103,7 +108,7 @@ public class ProdctConsumerDemo {
                     lock.lock();
                     while (numCount == MAX_COUNT) {
                         System.out.println(Thread.currentThread().getName()+"队列满了,线程暂停");
-                        notFull.await();
+                        productCondition.await();
                     }
                     numCount++;
                     int i = ThreadLocalRandom.current().nextInt();
@@ -114,9 +119,14 @@ public class ProdctConsumerDemo {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    notEmpty.signalAll();
+                    consumerCondition.signal();
                 } finally {
                     lock.unlock();
+                }
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }
